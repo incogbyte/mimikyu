@@ -1,0 +1,38 @@
+services:
+  caido-init:
+    image: caido/caido@sha256:cc33697ec4a13552bb6b4e92ac966eba44c95f2896df78c8ca2e9a73677ae5b3
+    user: root
+    entrypoint: ["sh", "-c"]
+    command: ["chown -R caido:caido /data"]
+    volumes:
+      - mimikyu_caido_data:/data
+
+  caido:
+    image: caido/caido@sha256:cc33697ec4a13552bb6b4e92ac966eba44c95f2896df78c8ca2e9a73677ae5b3
+    depends_on:
+      agent:
+        condition: service_healthy
+      origin:
+        condition: service_healthy
+      caido-init:
+        condition: service_completed_successfully
+    environment:
+      MIMIKYU_AGENT_PORT: 38427
+      MIMIKYU_AGENT_TOKEN: "change-this-development-token"
+    command:
+      - caido-cli
+      - --no-renderer-sandbox
+      - --no-open
+      - --no-sync
+      - --allow-guests
+      - --data-path
+      - /data
+      - --listen
+      - 0.0.0.0:8080
+    ports:
+      - 127.0.0.1:18080:8080
+    volumes:
+      - mimikyu_caido_data:/data
+
+volumes:
+  mimikyu_caido_data:
