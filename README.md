@@ -207,4 +207,4 @@ IMPLEMENTATION_STATE.md Handoff state for future agents
 
 ## License
 
-Mimikyu is distributed under the MIT License. See [`LICENSE`](LICENSE).
+Mimikyu is distributed under the GNU GPL v3.0. See [`LICENSE`](LICENSE).

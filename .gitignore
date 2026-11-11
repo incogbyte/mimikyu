@@ -1,8 +1,34 @@
+# JavaScript dependencies and build output
 node_modules/
 dist/
 packages/*/dist/
 .pnpm-store/
 .cache/
+
+# Agent build output
+agent/dist/
+
+# Go binaries, tests, coverage, and workspace files
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+coverage.*
+!coverage.go
+*.coverprofile
+profile.cov
+vendor/
+go.work
+go.work.sum
+
+# Environment and local files
+.env
+.DS_Store
+
+# Legacy transport build artifacts
 assets/transport/linux-*/caido-impersonate-transport*
 assets/transport/darwin-*/caido-impersonate-transport*
 assets/transport/windows-*/caido-impersonate-transport*
