@@ -165,8 +165,8 @@ onMounted(() => void refresh());
       >
         <template #empty>
           <div class="p-4 text-center text-sm text-surface-400">
-            No activity yet. Send a request that matches the Impersonate TLS
-            upstream rule.
+            No activity yet. Send a request that matches the Mimikyu upstream
+            rule.
           </div>
         </template>
 

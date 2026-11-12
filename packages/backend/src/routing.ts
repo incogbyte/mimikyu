@@ -13,7 +13,7 @@ type UpstreamRule = {
 export async function refreshUpstreamRules(sdk: BackendSDK): Promise<void> {
   const pluginId = sdk.meta.id();
   const listed = await sdk.graphql.execute<{ upstreamPlugins: UpstreamRule[] }>(
-    `query ImpersonateTLSUpstreamRules {
+    `query MimikyuUpstreamRules {
       upstreamPlugins { id enabled plugin { id } }
     }`,
   );
@@ -33,7 +33,7 @@ export async function refreshUpstreamRules(sdk: BackendSDK): Promise<void> {
       // eslint-disable-next-line @typescript-eslint/no-restricted-types -- GraphQL uses null for failed mutations.
       toggleUpstreamPlugin: { upstream: UpstreamRule | null };
     }>(
-      `mutation ImpersonateTLSRefreshUpstreamRule($id: ID!) {
+      `mutation MimikyuRefreshUpstreamRule($id: ID!) {
         toggleUpstreamPlugin(id: $id, enabled: true) {
           upstream { id enabled plugin { id } }
         }

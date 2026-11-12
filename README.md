@@ -164,6 +164,7 @@ pnpm test                 # Typecheck and lint the Caido plugin
 pnpm test:agent           # Agent syntax and unit tests
 pnpm test:e2e:agent       # Agent + Docker Chrome smoke test
 pnpm test:e2e:websocket   # Agent WebSocket smoke test
+pnpm test:e2e:caido-websocket # WebSocket through Caido proxy
 pnpm test:e2e:caido       # Full Caido package/proxy smoke test
 pnpm test:e2e:origin      # Streaming/multipart/WebSocket origin contract
 pnpm build                # Build dist/plugin_package.zip

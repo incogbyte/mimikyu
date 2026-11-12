@@ -38,12 +38,12 @@ export function createUpstreamHandler(
       return reject();
     }
     if (settings.enabled === false) {
-      if (spec.getHeader("X-Morpheus-Egress") !== undefined) {
+      if (spec.getHeader("X-Mimikyu-Egress") !== undefined) {
         return reject();
       }
       return undefined;
     }
-    if (spec.getHeader("X-Morpheus-Egress") !== undefined) {
+    if (spec.getHeader("X-Mimikyu-Egress") !== undefined) {
       return reject();
     }
 

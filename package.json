@@ -18,6 +18,7 @@
     "test:agent": "node --check agent/server.mjs && node --check agent/browser-manager.mjs && node --check agent/browser-executor.mjs && node --check agent/fetch-generator.mjs && node --check agent/request-classifier.mjs && node --check agent/relay.mjs && node --check agent/hook-runner.mjs && npm test --prefix agent",
     "test:e2e:agent": "node tests/e2e/agent-smoke.mjs",
     "test:e2e:websocket": "node tests/e2e/agent-websocket-smoke.mjs",
+    "test:e2e:caido-websocket": "node tests/e2e/caido-websocket-smoke.mjs",
     "test:e2e:caido": "node tests/e2e/caido-smoke.mjs",
     "test:e2e:origin": "node tests/e2e/protocol-origin-smoke.mjs",
     "watch": "caido-dev watch",

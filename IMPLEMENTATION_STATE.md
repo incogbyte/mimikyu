@@ -62,7 +62,7 @@ CDP endpoint through the same `BrowserProvider` abstraction.
 - Added an initial URL-encoded HTML form route with generated hidden inputs;
   multipart forms remain explicitly unsupported.
 - Removed the copied named-egress API/store from the MVP and made requests
-  carrying `X-Morpheus-Egress` fail closed until browser egress isolation is
+  carrying `X-Mimikyu-Egress` fail closed until browser egress isolation is
   implemented.
 - Added a persistent browser target pool boundary with a default maximum of
   eight concurrent targets and a ten-second queue timeout.
@@ -87,6 +87,7 @@ CDP endpoint through the same `BrowserProvider` abstraction.
   WebSocket echo endpoints; its direct protocol smoke test passes.
 - Added a CDP WebSocket bridge and chunked response forwarding; agent
   WebSocket, streaming, multipart, agent, and Caido smoke tests all pass.
+- Passed the WebSocket smoke through the real Caido proxy as well.
 - Fixed the CDP response-stage guard for `null` status codes; the real Caido
   integration and agent smoke tests pass again after rebuilding the agent.
 - Added body-read fallbacks for no-body responses and Network-domain capture;

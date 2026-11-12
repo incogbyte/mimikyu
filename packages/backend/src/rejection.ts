@@ -5,8 +5,8 @@ import type { BackendSDK } from "./types";
 type AgentDetails = { port: number; token: string } | undefined;
 
 // The MVP uses the authenticated agent as a reject-only endpoint. A native
-// reject helper can replace this later for the stronger unavailable-agent
-// boundary used by caido-impersonate-tls.
+// reject helper can replace this later for a stronger unavailable-agent
+// boundary.
 export class RejectionService {
   public constructor(
     private readonly sdk: BackendSDK,
