@@ -69,6 +69,41 @@ advanced multipart/file form controls remain follow-up work.
 - at least 2 GB of memory available for Chrome;
 - a browser window or Xpra-compatible client if manual login is required.
 
+## Install the released Caido plugin
+
+The installable package is published in the [GitHub Releases](https://github.com/incogbyte/mimikyu/releases) page.
+
+1. Download [`plugin_package.zip`](https://github.com/incogbyte/mimikyu/releases/download/v0.1.0/plugin_package.zip).
+2. Clone the repository to obtain the Docker browser setup:
+
+   ```sh
+   git clone git@github.com:incogbyte/mimikyu.git
+   cd mimikyu
+   ```
+
+3. Generate a local token and start the agent:
+
+   ```sh
+   export MIMIKYU_TOKEN="$(openssl rand -hex 32)"
+   docker compose -p mimikyu-poc -f docker-compose.mimikyu.yml up -d
+   ```
+
+4. In Caido, install the ZIP through **Plugins → Install Package**.
+5. Open **Mimikyu** and set the Docker browser mode, agent host
+   `127.0.0.1`, agent port `38427`, and the generated agent token.
+6. Enable browser routing and create an Upstream Plugin rule for the domains
+   you are authorized to test.
+
+The checksum is available as [`plugin_package.zip.sha256`](https://github.com/incogbyte/mimikyu/releases/download/v0.1.0/plugin_package.zip.sha256).
+
+Verify the local agent with:
+
+```sh
+curl http://127.0.0.1:38427/health
+```
+
+The expected result is `{"browser":"connected"}`.
+
 ## Quick start
 
 From the repository root:

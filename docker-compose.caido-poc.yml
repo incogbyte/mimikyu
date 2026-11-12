@@ -18,7 +18,7 @@ services:
         condition: service_completed_successfully
     environment:
       MIMIKYU_AGENT_PORT: 38427
-      MIMIKYU_AGENT_TOKEN: "change-this-development-token"
+      MIMIKYU_AGENT_TOKEN: "${MIMIKYU_TOKEN:-change-this-development-token}"
     command:
       - caido-cli
       - --no-renderer-sandbox
