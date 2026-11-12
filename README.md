@@ -11,10 +11,6 @@ traffic through a persistent Chrome/Chromium session. It keeps the browser
 alive, creates a background target for each request, and closes only that
 target when the request finishes.
 
-> Use Mimikyu only with applications, accounts, and traffic you are authorized
-> to test. Pokémon and Mimikyu are trademarks of their respective owners; the
-> image above is linked from the official Pokémon website for identification.
-
 ## How it works
 
 ```text
@@ -48,15 +44,16 @@ The current POC supports:
 - basic CORS preflight handling;
 - images, scripts, styles, frames, media, manifests, and workers;
 - URL-encoded HTML forms;
+- multipart bodies and initial response streaming;
+- WebSocket echo/relay support;
 - request-cookie injection;
 - before-request, after-request, and on-start hooks;
 - background/hidden targets with concurrency limits;
 - CDP reconnect and Docker healthchecks;
-- fail-closed behavior when browser routing is unavailable;
-- hot reload through Caido DevTools.
+- fail-closed behavior when browser routing is unavailable.
 
-Multipart/file uploads, WebSockets, authenticated browser egress pools, and
-full completion-event bridging for external agents remain follow-up work.
+Full cancellation semantics, authenticated browser egress pools, and some
+advanced multipart/file form controls remain follow-up work.
 
 ## Requirements
 
@@ -67,13 +64,6 @@ full completion-event bridging for external agents remain follow-up work.
 - a host capable of running the `linux/amd64` Chrome image;
 - at least 2 GB of memory available for Chrome;
 - a browser window or Xpra-compatible client if manual login is required.
-
-### Development
-
-- Node.js 20 or newer;
-- pnpm 11;
-- Git;
-- a local SSH key authorized to push to the repository.
 
 ## Quick start
 
@@ -99,7 +89,7 @@ Plugins → Install Package
 
 Then open **Mimikyu** and use these settings:
 
-| Setting | Development value |
+| Setting | Value |
 | --- | --- |
 | Browser mode | Docker-managed Chrome |
 | Agent host | `127.0.0.1` |
@@ -126,23 +116,6 @@ Open this address without routing it through the Caido proxy. The panel is an
 Xpra control page; the Chrome profile initially opens on `about:blank`, while
 Mimikyu request targets run in the background.
 
-## Caido DevTools hot reload
-
-The repository includes the official `caido-dev watch` workflow:
-
-```sh
-pnpm watch
-```
-
-Copy the displayed URL, normally:
-
-```text
-http://localhost:3000
-```
-
-into the installed Caido DevTools plugin and click **Connect**. Backend and
-frontend changes will reload without reinstalling the ZIP package.
-
 ## End-to-end validation
 
 Start the browser agent and local origin:
@@ -167,10 +140,10 @@ origin.
 
 ## Configuration and security
 
-The development Compose file uses `change-this-development-token` as a local
-placeholder. Replace `MIMIKYU_TOKEN` in the Compose environment and enter the
-same value in Mimikyu's **Agent token** setting. New plugin settings do not
-contain a usable default token.
+The Compose file uses `change-this-development-token` as a local placeholder.
+Replace `MIMIKYU_TOKEN` in the Compose environment and enter the same value in
+Mimikyu's **Agent token** setting. New plugin settings do not contain a usable
+default token.
 
 The agent and Xpra ports are bound to loopback by default. Do not expose the
 CDP port publicly. Treat the Chrome profile, cookies, hook files, agent token,
@@ -190,6 +163,7 @@ localhost
 pnpm test                 # Typecheck and lint the Caido plugin
 pnpm test:agent           # Agent syntax and unit tests
 pnpm test:e2e:agent       # Agent + Docker Chrome smoke test
+pnpm test:e2e:websocket   # Agent WebSocket smoke test
 pnpm test:e2e:caido       # Full Caido package/proxy smoke test
 pnpm test:e2e:origin      # Streaming/multipart/WebSocket origin contract
 pnpm build                # Build dist/plugin_package.zip
@@ -204,7 +178,6 @@ packages/shared/        Shared API and event types
 agent/                  Persistent CDP browser agent and localhost relay
 docker/chrome/          Persistent Chrome/Xpra image
 tests/e2e/              Local protocol origin and agent/Caido smoke tests
-IMPLEMENTATION_STATE.md Handoff state for future agents
 ```
 
 ## License

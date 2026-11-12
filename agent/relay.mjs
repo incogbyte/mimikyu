@@ -1,5 +1,6 @@
 import { timingSafeEqual } from 'node:crypto';
 import { createServer } from 'node:http';
+import { WebSocketServer } from 'ws';
 
 import {
     applyRequestCookies,
@@ -7,6 +8,7 @@ import {
     executeForm,
     executeNavigation,
     executeResource,
+    createWebSocketBridge,
 } from './browser-executor.mjs';
 import { runAfterHook, runBeforeHook } from './hook-runner.mjs';
 import { browserFetchHeaders, classifyRequest, getPageUrl } from './request-classifier.mjs';
@@ -87,6 +89,12 @@ function responseHeaders(headers, body) {
     return result;
 }
 
+function streamingHeaders(headers) {
+    const result = { ...headers };
+    delete result['content-length'];
+    return result;
+}
+
 function requestHeaders(request) {
     const result = {};
     for (const [key, value] of Object.entries(request.headers || {})) {
@@ -156,13 +164,25 @@ export function createRelay({
                     body,
                 };
                 await runBeforeHook(beforeHookPath, target, hookRequest);
+                let responseStarted = false;
+                const onHeaders = (info) => {
+                    if (responseStarted) return;
+                    response.writeHead(info.statusCode, streamingHeaders(info.headers));
+                    responseStarted = true;
+                };
+                const onChunk = (chunk) => {
+                    if (!responseStarted) return;
+                    if (request.method !== 'HEAD') response.write(chunk);
+                };
+                const streamOptions = { onHeaders, onChunk };
                 const result = route.kind === 'navigation'
-                    ? await executeNavigation(target, url)
+                    ? await executeNavigation(target, url, streamOptions)
                     : route.kind === 'resource'
                         ? await executeResource(target, {
                             url,
                             pageUrl: getPageUrl(url, headers),
                             destination: route.destination,
+                            ...streamOptions,
                         })
                         : route.kind === 'form'
                             ? await executeForm(target, {
@@ -171,6 +191,7 @@ export function createRelay({
                                 method: request.method || 'POST',
                                 body,
                                 contentType: String(headers['content-type'] || ''),
+                                ...streamOptions,
                             })
                         : await executeFetch(target, {
                             url,
@@ -178,15 +199,21 @@ export function createRelay({
                             method: request.method || 'GET',
                             headers: browserFetchHeaders(headers),
                             body,
+                            ...streamOptions,
                         });
                 try {
                     await runAfterHook(afterHookPath, target, hookRequest, result);
                 } catch (hookError) {
                     process.stderr.write(`[Mimikyu] after-request hook failed: ${String(hookError)}\n`);
                 }
-                const responseHeaderMap = responseHeaders(result.headers, result.body);
-                response.writeHead(result.statusCode, responseHeaderMap);
-                response.end(request.method === 'HEAD' ? undefined : result.body);
+                if (!responseStarted) {
+                    response.writeHead(
+                        result.statusCode,
+                        responseHeaders(result.headers, result.body),
+                    );
+                    responseStarted = true;
+                }
+                response.end();
                 onRequest({ trace, outcome: 'succeeded', statusCode: result.statusCode, durationMs: Date.now() - started });
             } finally {
                 await browserManager.releaseTarget(target);
@@ -194,9 +221,87 @@ export function createRelay({
         } catch (error) {
             const statusCode = Number(error?.statusCode) || 502;
             const message = error instanceof Error ? error.message : String(error);
-            writeError(response, statusCode, message);
+            if (response.headersSent) response.destroy();
+            else writeError(response, statusCode, message);
             onRequest({ trace, outcome: 'failed', error: message, durationMs: Date.now() - started });
         }
+    });
+    const webSocketServer = new WebSocketServer({ noServer: true });
+    server.on('upgrade', (request, socket, head) => {
+        const trace = String(request.headers[TRACE_HEADER] || 'unknown');
+        if (!tokenMatches(request.headers[TOKEN_HEADER], token)) {
+            socket.end('HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n');
+            return;
+        }
+        if (request.headers[REJECT_HEADER] === 'true' || !isReady()) {
+            socket.end('HTTP/1.1 503 Service Unavailable\r\nConnection: close\r\n\r\n');
+            return;
+        }
+        webSocketServer.handleUpgrade(request, socket, head, async (client) => {
+            const started = Date.now();
+            let target;
+            let bridge;
+            let opened = false;
+            let released = false;
+            const release = async () => {
+                if (released) return;
+                released = true;
+                await browserManager.releaseTarget(target).catch(() => {});
+            };
+            try {
+                const queue = [];
+                client.on('message', (data, binary) => {
+                    const message = binary ? data : data.toString();
+                    process.stdout.write(`${JSON.stringify({ event: 'websocket', phase: 'client-message', binary: Boolean(binary) })}\n`);
+                    if (opened && bridge) void bridge.send(message, binary);
+                    else queue.push({ data: message, binary });
+                });
+                const url = targetUrl(request);
+                const webSocketUrl = url.replace(/^http/u, 'ws');
+                const headers = requestHeaders(request);
+                const pageUrl = getPageUrl(url, headers);
+                const protocols = String(request.headers['sec-websocket-protocol'] || '')
+                    .split(',')
+                    .map((value) => value.trim())
+                    .filter(Boolean);
+                target = await browserManager.acquireTarget();
+                await applyRequestCookies(target, url, headers);
+                bridge = await createWebSocketBridge(target, {
+                    url: webSocketUrl,
+                    pageUrl,
+                    protocols,
+                    onOpen: () => {
+                        opened = true;
+                        for (const message of queue.splice(0)) bridge.send(message.data, message.binary);
+                        onRequest({ trace, outcome: 'succeeded', statusCode: 101, durationMs: Date.now() - started });
+                    },
+                    onMessage: (data, binary) => {
+                        process.stdout.write(`${JSON.stringify({ event: 'websocket', phase: 'browser-message', binary: Boolean(binary) })}\n`);
+                        if (client.readyState === 1) client.send(data, { binary });
+                    },
+                    onClose: (code, reason) => {
+                        if (client.readyState === 1) client.close(code || 1000, reason || '');
+                        void release();
+                    },
+                    onError: (error) => {
+                        if (client.readyState === 1) client.close(1011, String(error).slice(0, 120));
+                        void release();
+                    },
+                });
+                client.on('close', () => {
+                    void bridge?.close();
+                    void release();
+                });
+                client.on('error', () => {
+                    void bridge?.close();
+                    void release();
+                });
+            } catch (error) {
+                client.close();
+                await release();
+                onRequest({ trace, outcome: 'failed', error: String(error), durationMs: Date.now() - started });
+            }
+        });
     });
 
     return {

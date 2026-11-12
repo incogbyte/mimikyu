@@ -83,12 +83,36 @@ function responseHasNoBody(method, statusCode) {
         [301, 302, 303, 307, 308].includes(statusCode);
 }
 
-async function readResponseBody(Fetch, Network, event) {
+async function readResponseBody(Fetch, IO, Network, event, onChunk) {
     if (responseHasNoBody(event.request?.method, event.responseStatusCode)) {
         return Buffer.alloc(0);
     }
     try {
-        return responseBodyToBuffer(await Fetch.getResponseBody({ requestId: event.requestId }));
+        if (IO && typeof Fetch.takeResponseBodyAsStream === 'function') {
+            const stream = await Fetch.takeResponseBodyAsStream({ requestId: event.requestId });
+            const chunks = [];
+            try {
+                while (true) {
+                    const part = await IO.read({ handle: stream.stream });
+                    const chunk = typeof part.data === 'string'
+                        ? part.base64Encoded === true
+                            ? Buffer.from(part.data, 'base64')
+                            : Buffer.from(part.data)
+                        : Buffer.alloc(0);
+                    if (chunk.length > 0) {
+                        chunks.push(chunk);
+                        onChunk?.(chunk);
+                    }
+                    if (part.eof === true) break;
+                }
+            } finally {
+                await IO.close({ handle: stream.stream }).catch(() => {});
+            }
+            return Buffer.concat(chunks);
+        }
+        const body = responseBodyToBuffer(await Fetch.getResponseBody({ requestId: event.requestId }));
+        onChunk?.(body);
+        return body;
     } catch (error) {
         if (event.networkId !== undefined && Network) {
             try {
@@ -119,8 +143,85 @@ function headerValue(headers, name) {
     return '';
 }
 
-async function captureResponse(target, { captureUrl, navigationUrl, navigationHtml }) {
-    const { Fetch, Network, Page } = target.tab;
+function safeJson(value) {
+    return JSON.stringify(value)
+        .replaceAll('<', '\\u003c')
+        .replaceAll('>', '\\u003e')
+        .replaceAll('&', '\\u0026');
+}
+
+export async function createWebSocketBridge(target, {
+    url,
+    pageUrl,
+    protocols = [],
+    onOpen,
+    onMessage,
+    onClose,
+    onError,
+}) {
+    const { Page, Runtime } = target.tab;
+    const bindingName = `mimikyuWebSocket_${Math.random().toString(36).slice(2)}`;
+    let closed = false;
+    const bindingHandler = async (event) => {
+        if (event.name !== bindingName || closed) return;
+        try {
+            const message = JSON.parse(event.payload);
+            if (message.kind === 'open') onOpen?.();
+            else if (message.kind === 'message') {
+                const data = message.binary === true
+                    ? Buffer.from(message.data, 'base64')
+                    : message.data;
+                onMessage?.(data, message.binary === true);
+            } else if (message.kind === 'close') onClose?.(message.code, message.reason);
+            else if (message.kind === 'error') onError?.(message.message);
+        } catch (error) {
+            onError?.(String(error));
+        }
+    };
+
+    await Runtime.enable();
+    await Page.enable();
+    Runtime.bindingCalled(bindingHandler);
+    await Runtime.addBinding({ name: bindingName });
+    await Page.navigate({ url: pageUrl, transitionType: 'other' });
+    await Runtime.evaluate({
+        expression: `(() => {
+            const emit = (value) => window[${safeJson(bindingName)}](JSON.stringify(value));
+            const socket = new WebSocket(${safeJson(url)}, ${safeJson(protocols)});
+            socket.binaryType = 'arraybuffer';
+            socket.addEventListener('open', () => emit({ kind: 'open' }));
+            socket.addEventListener('message', (event) => {
+                if (event.data instanceof ArrayBuffer) {
+                    const bytes = new Uint8Array(event.data);
+                    let binary = '';
+                    for (const byte of bytes) binary += String.fromCharCode(byte);
+                    emit({ kind: 'message', binary: true, data: btoa(binary) });
+                } else {
+                    emit({ kind: 'message', binary: false, data: String(event.data) });
+                }
+            });
+            socket.addEventListener('close', (event) => emit({ kind: 'close', code: event.code, reason: event.reason }));
+            socket.addEventListener('error', () => emit({ kind: 'error', message: 'Browser WebSocket error' }));
+            window.__mimikyuWebSocket = socket;
+        })()`
+    });
+
+    return {
+        send(data, binary = false) {
+            const payload = binary
+                ? `(() => { const b = atob(${safeJson(Buffer.from(data).toString('base64'))}); const a = new Uint8Array(b.length); for (let i = 0; i < b.length; i += 1) a[i] = b.charCodeAt(i); window.__mimikyuWebSocket?.send(a); })()`
+                : `window.__mimikyuWebSocket?.send(${safeJson(String(data))})`;
+            return Runtime.evaluate({ expression: payload });
+        },
+        close() {
+            closed = true;
+            return Runtime.evaluate({ expression: 'window.__mimikyuWebSocket?.close()' }).catch(() => {});
+        },
+    };
+}
+
+async function captureResponse(target, { captureUrl, navigationUrl, navigationHtml, onHeaders, onChunk }) {
+    const { Fetch, IO, Network, Page } = target.tab;
     let settled = false;
     let timer;
 
@@ -200,10 +301,14 @@ async function captureResponse(target, { captureUrl, navigationUrl, navigationHt
                         return;
                     }
 
-                    const body = await readResponseBody(Fetch, Network, event);
-                    const response = {
+                    const responseInfo = {
                         statusCode: event.responseStatusCode,
                         headers: responseHeadersToObject(event.responseHeaders),
+                    };
+                    onHeaders?.(responseInfo);
+                    const body = await readResponseBody(Fetch, IO, Network, event, onChunk);
+                    const response = {
+                        ...responseInfo,
                         body,
                     };
                     await Fetch.fulfillRequest({
@@ -251,49 +356,53 @@ async function captureResponse(target, { captureUrl, navigationUrl, navigationHt
     }
 }
 
-export async function executeNavigation(target, url) {
+export async function executeNavigation(target, url, streamOptions = {}) {
     const captureUrl = captureUrlFor(url);
     return captureResponse(target, {
-        captureUrl,
-        navigationUrl: captureUrl,
+      captureUrl,
+      navigationUrl: captureUrl,
+      ...streamOptions,
     });
 }
 
-export async function executeFetch(target, { url, pageUrl, method, headers, body }) {
+export async function executeFetch(target, { url, pageUrl, method, headers, body, ...streamOptions }) {
     const { generateFetchDocument } = await import('./fetch-generator.mjs');
     const document = generateFetchDocument({ url, method, headers, body });
     const documentUrl = `data:text/html;charset=utf-8,${encodeURIComponent(document)}`;
     const captureUrl = captureUrlFor(url);
     const navigationUrl = pageUrl && pageUrl !== captureUrl ? pageUrl : documentUrl;
     return captureResponse(target, {
-        captureUrl,
-        navigationUrl,
-        navigationHtml: navigationUrl === documentUrl ? undefined : document,
+      captureUrl,
+      navigationUrl,
+      navigationHtml: navigationUrl === documentUrl ? undefined : document,
+      ...streamOptions,
     });
 }
 
-export async function executeResource(target, { url, pageUrl, destination }) {
+export async function executeResource(target, { url, pageUrl, destination, ...streamOptions }) {
     const { generateResourceDocument } = await import('./fetch-generator.mjs');
     const document = generateResourceDocument({ url, destination });
     const documentUrl = `data:text/html;charset=utf-8,${encodeURIComponent(document)}`;
     const captureUrl = captureUrlFor(url);
     const navigationUrl = pageUrl && pageUrl !== captureUrl ? pageUrl : documentUrl;
     return captureResponse(target, {
-        captureUrl,
-        navigationUrl,
-        navigationHtml: navigationUrl === documentUrl ? undefined : document,
+      captureUrl,
+      navigationUrl,
+      navigationHtml: navigationUrl === documentUrl ? undefined : document,
+      ...streamOptions,
     });
 }
 
-export async function executeForm(target, { url, pageUrl, method, body, contentType }) {
+export async function executeForm(target, { url, pageUrl, method, body, contentType, ...streamOptions }) {
     const { generateFormDocument } = await import('./fetch-generator.mjs');
     const document = generateFormDocument({ url, method, body, contentType });
     const documentUrl = `data:text/html;charset=utf-8,${encodeURIComponent(document)}`;
     const captureUrl = captureUrlFor(url);
     const navigationUrl = pageUrl && pageUrl !== captureUrl ? pageUrl : documentUrl;
     return captureResponse(target, {
-        captureUrl,
-        navigationUrl,
-        navigationHtml: navigationUrl === documentUrl ? undefined : document,
+      captureUrl,
+      navigationUrl,
+      navigationHtml: navigationUrl === documentUrl ? undefined : document,
+      ...streamOptions,
     });
 }

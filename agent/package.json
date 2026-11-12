@@ -8,6 +8,7 @@
     "test": "node --test test/*.test.mjs"
   },
   "dependencies": {
-    "chrome-remote-interface": "0.33.3"
+    "chrome-remote-interface": "0.33.3",
+    "ws": "8.18.3"
   }
 }
