@@ -15,7 +15,7 @@ const DEFAULT_SETTINGS: Settings = {
   browserMode: "docker-managed",
   agentHost: "127.0.0.1",
   agentPort: 38427,
-  agentToken: "change-this-development-token",
+  agentToken: "",
   cdpHost: "127.0.0.1",
   cdpPort: 9222,
   maximumUploadMiB: 8,

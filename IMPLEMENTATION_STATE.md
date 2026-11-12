@@ -89,6 +89,8 @@ CDP endpoint through the same `BrowserProvider` abstraction.
   both the agent and full Caido integration smoke tests pass after the fix.
 - Added Caido `onInterceptResponse` Activity completion for external agents;
   the Caido integration smoke now requires `succeeded` Activity state.
+- Removed the development token from new settings defaults; Docker-managed mode
+  now refuses to start without an explicitly configured agent token.
 - Removed compressed-response encoding headers when returning CDP-decoded
   bodies, fixing real compressed HTML/font responses in Caido's browser path.
 - Operator manually validated `rentcars.com` through the Caido browser path;

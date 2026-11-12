@@ -4,6 +4,7 @@ import { request } from 'node:http';
 
 const base = process.env.MIMIKYU_CAIDO_URL || 'http://127.0.0.1:18080';
 const packagePath = process.env.MIMIKYU_PACKAGE || './dist/plugin_package.zip';
+const agentToken = process.env.MIMIKYU_E2E_TOKEN || 'change-this-development-token';
 let token;
 let pluginId;
 
@@ -159,6 +160,7 @@ await rpc('updateSettings', {
     autoStart: true,
     agentHost: 'agent',
     agentPort: 38427,
+    agentToken,
 });
 await createUpstreamRule();
 await waitFor(async () => {

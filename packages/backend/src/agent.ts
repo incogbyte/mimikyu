@@ -118,6 +118,11 @@ export class AgentService {
       });
       return { kind: "Ok", value: this.getStatus() };
     }
+    if (settings.browserMode === "docker-managed") {
+      return this.fail(
+        "An agent token is required for Docker-managed browser routing",
+      );
+    }
 
     const agentPath =
       environment.MIMIKYU_AGENT_PATH ??

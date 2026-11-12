@@ -104,7 +104,7 @@ Then open **Mimikyu** and use these settings:
 | Browser mode | Docker-managed Chrome |
 | Agent host | `127.0.0.1` |
 | Agent port | `38427` |
-| Agent token | `change-this-development-token` |
+| Agent token | Value of `MIMIKYU_TOKEN` used by the agent |
 | Enable browser routing | Enabled |
 | Start with plugin | Enabled |
 
@@ -167,9 +167,10 @@ origin.
 
 ## Configuration and security
 
-The development Compose stack uses the token `change-this-development-token`.
-Change it before using the system outside a local development environment, and
-set the same value in Mimikyu's **Agent token** setting.
+The development Compose file uses `change-this-development-token` as a local
+placeholder. Replace `MIMIKYU_TOKEN` in the Compose environment and enter the
+same value in Mimikyu's **Agent token** setting. New plugin settings do not
+contain a usable default token.
 
 The agent and Xpra ports are bound to loopback by default. Do not expose the
 CDP port publicly. Treat the Chrome profile, cookies, hook files, agent token,
