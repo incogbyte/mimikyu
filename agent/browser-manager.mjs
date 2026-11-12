@@ -68,36 +68,48 @@ export class BrowserManager extends EventEmitter {
         return this.connect();
     }
 
-    async acquireTarget() {
+    async acquireTarget({ cookieMode = 'shared' } = {}) {
         await this.acquireSlot();
         try {
             const browser = await this.connect();
+            let browserContextId;
+            if (cookieMode === 'isolated') {
+                const context = await browser.Target.createBrowserContext({
+                    disposeOnDetach: true,
+                });
+                browserContextId = context.browserContextId;
+            }
             let result;
             try {
                 result = await browser.Target.createTarget({
                     url: 'about:blank',
                     background: true,
                     hidden: true,
+                    ...(browserContextId ? { browserContextId } : {}),
                 });
             } catch (error) {
                 if (!String(error).toLowerCase().includes('hidden')) throw error;
                 result = await browser.Target.createTarget({
                     url: 'about:blank',
                     background: true,
+                    ...(browserContextId ? { browserContextId } : {}),
                 });
             }
             try {
-                return await this.attachTarget(browser, result.targetId);
+                return await this.attachTarget(browser, result.targetId, browserContextId);
             } catch (error) {
                 await browser.Target.closeTarget({ targetId: result.targetId }).catch(() => {});
+                if (browserContextId) await browser.Target.disposeBrowserContext({ browserContextId }).catch(() => {});
                 const fallback = await browser.Target.createTarget({
                     url: 'about:blank',
                     background: true,
+                    ...(browserContextId ? { browserContextId } : {}),
                 });
                 try {
-                    return await this.attachTarget(browser, fallback.targetId);
+                    return await this.attachTarget(browser, fallback.targetId, browserContextId);
                 } catch (fallbackError) {
                     await browser.Target.closeTarget({ targetId: fallback.targetId }).catch(() => {});
+                    if (browserContextId) await browser.Target.disposeBrowserContext({ browserContextId }).catch(() => {});
                     throw fallbackError || error;
                 }
             }
@@ -107,7 +119,7 @@ export class BrowserManager extends EventEmitter {
         }
     }
 
-    async attachTarget(browser, targetId) {
+    async attachTarget(browser, targetId, browserContextId) {
         if (typeof targetId !== 'string' || targetId.length === 0) {
             throw new Error('Chrome returned an invalid target id');
         }
@@ -117,7 +129,7 @@ export class BrowserManager extends EventEmitter {
             Date.now() + TARGET_TIMEOUT_MS,
             browser.protocol,
         );
-        return { browser, tab, targetId, slotReleased: false };
+        return { browser, tab, targetId, browserContextId, slotReleased: false };
     }
 
     async releaseTarget(target) {
@@ -128,6 +140,11 @@ export class BrowserManager extends EventEmitter {
             await cdptransport.close_session(target.tab, Date.now() + TARGET_TIMEOUT_MS);
             if (this.browser === target.browser) {
                 await target.browser.Target.closeTarget({ targetId: target.targetId }).catch(() => {});
+            }
+            if (this.browser === target.browser && target.browserContextId) {
+                await target.browser.Target.disposeBrowserContext({
+                    browserContextId: target.browserContextId,
+                }).catch(() => {});
             }
         } finally {
             if (!target.slotReleased) {

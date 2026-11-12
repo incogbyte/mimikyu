@@ -13,6 +13,7 @@ const INTERNAL_HEADERS = {
   port: "X-Mimikyu-Port",
   trace: "X-Mimikyu-Trace",
   maxBody: "X-Mimikyu-Max-Body-Bytes",
+  cookieMode: "X-Mimikyu-Cookie-Mode",
 } as const;
 
 export function createUpstreamHandler(
@@ -75,6 +76,7 @@ export function createUpstreamHandler(
       INTERNAL_HEADERS.maxBody,
       String(settings.maximumUploadMiB * 1024 * 1024),
     );
+    spec.setHeader(INTERNAL_HEADERS.cookieMode, settings.cookieMode);
 
     try {
       const connection = await sdk.net.connect(

@@ -26,6 +26,10 @@ const modeOptions = [
   { label: "Docker-managed Chrome", value: "docker-managed" },
   { label: "External browser via CDP", value: "external-cdp" },
 ];
+const cookieModeOptions = [
+  { label: "Shared browser session", value: "shared" },
+  { label: "Isolated request session", value: "isolated" },
+];
 
 function unwrap<T>(result: Result<T>): T {
   if (result.kind === "Error") throw new Error(result.error);
@@ -254,6 +258,26 @@ onMounted(() => void load());
                   v-model="settings.agentToken"
                   type="password"
                   class="w-full mt-1"
+                />
+              </div>
+
+              <div class="flex items-center gap-4">
+                <div class="flex-1 min-w-0">
+                  <label class="text-sm font-medium" for="cookie-mode"
+                    >Cookie/session mode</label
+                  >
+                  <p class="text-sm text-surface-400">
+                    Isolated mode prevents profile cookies from contaminating
+                    Replay token tests.
+                  </p>
+                </div>
+                <Select
+                  v-model="settings.cookieMode"
+                  input-id="cookie-mode"
+                  :options="cookieModeOptions"
+                  option-label="label"
+                  option-value="value"
+                  class="w-64"
                 />
               </div>
 

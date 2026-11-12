@@ -16,6 +16,7 @@ const DEFAULT_SETTINGS: Settings = {
   agentHost: "127.0.0.1",
   agentPort: 38427,
   agentToken: "",
+  cookieMode: "shared",
   cdpHost: "127.0.0.1",
   cdpPort: 9222,
   maximumUploadMiB: 8,
@@ -88,6 +89,7 @@ export class SettingsStore {
     const browserMode = candidate.browserMode as BrowserMode;
     const agentPort = candidate.agentPort;
     const agentToken = candidate.agentToken ?? DEFAULT_SETTINGS.agentToken;
+    const cookieMode = candidate.cookieMode ?? DEFAULT_SETTINGS.cookieMode;
     const cdpPort = candidate.cdpPort;
     const maximumUploadMiB = candidate.maximumUploadMiB;
     if (
@@ -102,6 +104,7 @@ export class SettingsStore {
       agentPort > 65535 ||
       typeof agentToken !== "string" ||
       agentToken.length > 4096 ||
+      (cookieMode !== "shared" && cookieMode !== "isolated") ||
       typeof candidate.cdpHost !== "string" ||
       candidate.cdpHost.length === 0 ||
       typeof cdpPort !== "number" ||
@@ -122,6 +125,7 @@ export class SettingsStore {
       agentHost: candidate.agentHost,
       agentPort,
       agentToken,
+      cookieMode,
       cdpHost: candidate.cdpHost,
       cdpPort,
       maximumUploadMiB,

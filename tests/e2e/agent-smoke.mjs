@@ -110,4 +110,12 @@ assert.equal(cookie.status, 200);
 const cookiePayload = JSON.parse(cookie.body.toString('utf8'));
 assert.match(cookiePayload.headers.cookie, /mimikyu_cookie=from-caido/u);
 
+const isolatedCookie = await callAgent({
+    path: '/api/echo',
+    headers: { 'X-Mimikyu-Cookie-Mode': 'isolated' },
+});
+assert.equal(isolatedCookie.status, 200);
+const isolatedPayload = JSON.parse(isolatedCookie.body.toString('utf8'));
+assert.equal(isolatedPayload.headers.cookie, '');
+
 process.stdout.write('Mimikyu agent E2E smoke passed\n');

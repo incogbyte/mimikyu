@@ -19,6 +19,7 @@ const HOST_HEADER = 'x-mimikyu-host';
 const PORT_HEADER = 'x-mimikyu-port';
 const TRACE_HEADER = 'x-mimikyu-trace';
 const MAX_BODY_HEADER = 'x-mimikyu-max-body-bytes';
+const COOKIE_MODE_HEADER = 'x-mimikyu-cookie-mode';
 const REJECT_HEADER = 'x-mimikyu-reject';
 const INTERNAL_HEADERS = new Set([
     TOKEN_HEADER,
@@ -27,6 +28,7 @@ const INTERNAL_HEADERS = new Set([
     PORT_HEADER,
     TRACE_HEADER,
     MAX_BODY_HEADER,
+    COOKIE_MODE_HEADER,
     REJECT_HEADER,
 ]);
 const DEFAULT_MAX_BODY_BYTES = 8 * 1024 * 1024;
@@ -153,7 +155,10 @@ export function createRelay({
                 writeError(response, 501, `Resource route is not implemented: ${route.destination}`);
                 return;
             }
-            const target = await browserManager.acquireTarget();
+            const cookieMode = request.headers[COOKIE_MODE_HEADER] === 'isolated'
+                ? 'isolated'
+                : 'shared';
+            const target = await browserManager.acquireTarget({ cookieMode });
             try {
                 await applyRequestCookies(target, url, headers);
                 const hookRequest = {

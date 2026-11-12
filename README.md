@@ -162,6 +162,7 @@ Then open **Mimikyu** and use these settings:
 | Agent host | `127.0.0.1` |
 | Agent port | `38427` |
 | Agent token | Value of `MIMIKYU_TOKEN` used by the agent |
+| Cookie/session mode | `shared` for normal browser sessions; `isolated` for Replay token testing |
 | Enable browser routing | Enabled |
 | Start with plugin | Enabled |
 
@@ -182,6 +183,10 @@ http://127.0.0.1:14111
 Open this address without routing it through the Caido proxy. The panel is an
 Xpra control page; the Chrome profile initially opens on `about:blank`, while
 Mimikyu request targets run in the background.
+
+Use **isolated** cookie/session mode when testing account separation, session
+fixation, or token swapping. Each request then uses a fresh browser context and
+does not inherit cookies or local storage from the persistent Xpra profile.
 
 ## End-to-end validation
 

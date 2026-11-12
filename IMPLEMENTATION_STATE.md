@@ -96,6 +96,9 @@ CDP endpoint through the same `BrowserProvider` abstraction.
   the Caido integration smoke now requires `succeeded` Activity state.
 - Removed the development token from new settings defaults; Docker-managed mode
   now refuses to start without an explicitly configured agent token.
+- Added definitive `shared`/`isolated` cookie session modes. Isolated mode uses
+  a fresh Chrome BrowserContext per request and is validated by the agent smoke
+  test to prevent persistent-profile cookie leakage.
 - Removed compressed-response encoding headers when returning CDP-decoded
   bodies, fixing real compressed HTML/font responses in Caido's browser path.
 - Operator manually validated a real-world site with bot protection through
@@ -132,6 +135,11 @@ CDP endpoint through the same `BrowserProvider` abstraction.
    routing, the external Docker agent, and a real proxy response.
 7. Activity completion is bridged through Caido's `onInterceptResponse` event;
    failure-only paths without a response still need a dedicated error event.
+8. Security-testing limitation: Docker-managed Chrome currently uses a shared
+   persistent cookie jar. A Replay request's explicit Cookie values are set,
+   but unrelated profile cookies can still be sent alongside them. This can
+   contaminate session-token/account-isolation tests and requires an isolated
+   browser-context/cookie policy before production use for that scenario.
 
 ## Recommended next steps
 

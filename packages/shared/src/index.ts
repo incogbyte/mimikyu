@@ -7,6 +7,7 @@ export type TransportState =
   "idle" | "starting" | "running" | "stopping" | "error" | "unsupported";
 
 export type BrowserMode = "docker-managed" | "external-cdp";
+export type CookieMode = "shared" | "isolated";
 export type BrowserState =
   "unknown" | "connected" | "disconnected" | "unavailable";
 
@@ -27,6 +28,7 @@ export type Settings = {
   agentHost: string;
   agentPort: number;
   agentToken: string;
+  cookieMode: CookieMode;
   cdpHost: string;
   cdpPort: number;
   maximumUploadMiB: number;
