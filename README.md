@@ -11,6 +11,10 @@ traffic through a persistent Chrome/Chromium session. It keeps the browser
 alive, creates a background target for each request, and closes only that
 target when the request finishes.
 
+## Demo
+
+[Watch the PoC video](docs/PoC.mp4)
+
 ## How it works
 
 ```text
