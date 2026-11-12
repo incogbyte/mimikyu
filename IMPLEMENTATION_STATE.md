@@ -98,9 +98,10 @@ CDP endpoint through the same `BrowserProvider` abstraction.
   now refuses to start without an explicitly configured agent token.
 - Removed compressed-response encoding headers when returning CDP-decoded
   bodies, fixing real compressed HTML/font responses in Caido's browser path.
-- Operator manually validated `rentcars.com` through the Caido browser path;
-  the page rendered with its protection layer, CSS, WOFF fonts, JavaScript,
-  and Next.js-associated requests working. This is an operator report, not a
+- Operator manually validated a real-world site with bot protection through
+  the Caido browser path; the page rendered with its protection layer, CSS,
+  WOFF fonts, JavaScript, and framework-associated requests working. This is
+  an operator report, not a
   formal browser-fingerprint parity certification.
 - Operator validated direct proxy traffic with curl through Caido for both
   navigation and browser `fetch()`/POST. The origin received a Chrome 157
