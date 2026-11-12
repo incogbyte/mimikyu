@@ -28,10 +28,6 @@ go.work.sum
 .env
 .DS_Store
 
-# Internal agent handoff/process notes, not project documentation
-IMPLEMENTATION_STATE.md
-AGENTS.md
-
 # Legacy transport build artifacts
 assets/transport/linux-*/caido-impersonate-transport*
 assets/transport/darwin-*/caido-impersonate-transport*
