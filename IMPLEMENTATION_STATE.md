@@ -1,6 +1,6 @@
 # Mimikyu Implementation State
 
-**Last updated:** 2026-11-11  
+**Last updated:** 2026-11-12  
 **Owner:** OpenCode session  
 **Purpose:** Handoff state for future agents continuing the implementation.
 
@@ -89,6 +89,10 @@ CDP endpoint through the same `BrowserProvider` abstraction.
   both the agent and full Caido integration smoke tests pass after the fix.
 - Removed compressed-response encoding headers when returning CDP-decoded
   bodies, fixing real compressed HTML/font responses in Caido's browser path.
+- Operator manually validated `rentcars.com` through the Caido browser path;
+  the page rendered with its protection layer, CSS, WOFF fonts, JavaScript,
+  and Next.js-associated requests working. This is an operator report, not a
+  formal browser-fingerprint parity certification.
 - Added the official `caido-dev watch` workflow; the local hot-reload server is
   running at `http://localhost:3000` for the installed Caido DevTools plugin.
 - Fixed direct-egress Docker configuration, a relay header shadowing bug, and
