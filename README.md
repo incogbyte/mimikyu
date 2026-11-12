@@ -191,6 +191,7 @@ pnpm test                 # Typecheck and lint the Caido plugin
 pnpm test:agent           # Agent syntax and unit tests
 pnpm test:e2e:agent       # Agent + Docker Chrome smoke test
 pnpm test:e2e:caido       # Full Caido package/proxy smoke test
+pnpm test:e2e:origin      # Streaming/multipart/WebSocket origin contract
 pnpm build                # Build dist/plugin_package.zip
 ```
 
@@ -202,7 +203,7 @@ packages/frontend/      Caido settings and Activity UI
 packages/shared/        Shared API and event types
 agent/                  Persistent CDP browser agent and localhost relay
 docker/chrome/          Persistent Chrome/Xpra image
-tests/e2e/              Local origin and agent/Caido smoke tests
+tests/e2e/              Local protocol origin and agent/Caido smoke tests
 IMPLEMENTATION_STATE.md Handoff state for future agents
 ```
 

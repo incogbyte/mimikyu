@@ -4,6 +4,8 @@ services:
       context: ./tests/e2e
     expose:
       - 8080
+    ports:
+      - 127.0.0.1:18081:8080
     healthcheck:
       test:
         ["CMD", "node", "-e", "require('node:http').get('http://127.0.0.1:8080/navigation', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]

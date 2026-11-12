@@ -83,6 +83,8 @@ CDP endpoint through the same `BrowserProvider` abstraction.
   test with `docker compose -p mimikyu-poc`.
 - Passed the full Caido integration smoke: package installation, Upstream rule
   creation, external agent configuration, proxy request, and Activity entry.
+- Added a deterministic protocol origin with streaming, multipart upload, and
+  WebSocket echo endpoints; its direct protocol smoke test passes.
 - Fixed the CDP response-stage guard for `null` status codes; the real Caido
   integration and agent smoke tests pass again after rebuilding the agent.
 - Added body-read fallbacks for no-body responses and Network-domain capture;
