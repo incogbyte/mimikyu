@@ -99,6 +99,9 @@ CDP endpoint through the same `BrowserProvider` abstraction.
   the page rendered with its protection layer, CSS, WOFF fonts, JavaScript,
   and Next.js-associated requests working. This is an operator report, not a
   formal browser-fingerprint parity certification.
+- Operator validated direct proxy traffic with curl through Caido for both
+  navigation and browser `fetch()`/POST. The origin received a Chrome 157
+  user agent and returned the expected HTML/JSON responses.
 - Added the official `caido-dev watch` workflow; the local hot-reload server is
   running at `http://localhost:3000` for the installed Caido DevTools plugin.
 - Fixed direct-egress Docker configuration, a relay header shadowing bug, and
