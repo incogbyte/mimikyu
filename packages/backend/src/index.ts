@@ -159,6 +159,9 @@ export async function init(sdk: SDK<Spec>): Promise<void> {
       rejection,
     ),
   );
+  sdk.events.onInterceptResponse((_sdk, request, response) => {
+    activityStore.completeFromResponse(request, response);
+  });
 
   try {
     await rejection.start();

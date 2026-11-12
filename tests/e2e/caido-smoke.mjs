@@ -172,10 +172,7 @@ assert.equal(response.status, 200, response.body);
 assert.match(response.body, /mimikyu-navigation-ok/u);
 const activity = await rpc('getActivity');
 assert.equal(activity.length, 1, JSON.stringify(activity));
-assert(
-    activity[0].state === 'routed' || activity[0].state === 'succeeded',
-    JSON.stringify(activity),
-);
+assert.equal(activity[0].state, 'succeeded', JSON.stringify(activity));
 assert.equal(activity[0].browserMode, 'docker-managed');
 
 process.stdout.write('Mimikyu Caido integration smoke passed\n');

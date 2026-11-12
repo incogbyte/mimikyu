@@ -1,3 +1,4 @@
+import type { Request, Response } from "caido:utils";
 import type { ActivityEntry } from "shared";
 
 import { MAX_ACTIVITY_ENTRIES } from "../../shared/src/activity";
@@ -70,6 +71,30 @@ export class ActivityStore {
       );
     }
     this.publish(entry);
+  }
+
+  public completeFromResponse(request: Request, response: Response): void {
+    const trace = request.getHeader("X-Mimikyu-Trace");
+    const id = Array.isArray(trace) ? trace[0] : trace;
+    const entry =
+      id === undefined
+        ? this.entries.find(
+            (candidate) =>
+              candidate.state === "routed" &&
+              candidate.method === request.getMethod() &&
+              candidate.host === request.getHost() &&
+              candidate.port === request.getPort(),
+          )
+        : this.entries.find((candidate) => candidate.id === id);
+    if (entry === undefined || entry.state !== "routed") return;
+
+    this.complete({
+      id: entry.id,
+      outcome: "succeeded",
+      statusCode: response.getCode(),
+      protocol: "caido",
+      durationMs: response.getRoundtripTime(),
+    });
   }
 
   public fail(id: string, error: string): void {

@@ -1,121 +1,23 @@
-name: Build plugin
+name: Build Mimikyu
 
 on:
   push:
   pull_request:
-  workflow_dispatch:
-
-permissions:
-  contents: read
-
-concurrency:
-  group: build-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
 
 jobs:
-  profiles:
-    name: Compare pinned upstream browser and relay
-    runs-on: ubuntu-24.04
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
-        with:
-          persist-credentials: false
-      - name: Build disposable browser fixture
-        run: docker build -f tests/browser/Dockerfile -t impersonate-tls-browser-test .
-      - name: Compare local destination fingerprints
-        run: docker run --rm --network none --shm-size=1g --cap-drop ALL --security-opt no-new-privileges impersonate-tls-browser-test
-
   build:
-    name: Verify and package
-    runs-on: ubuntu-24.04
-    timeout-minutes: 30
-
+    runs-on: ubuntu-latest
     steps:
-      - name: Check out repository
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
         with:
-          persist-credentials: false
-
-      - name: Build and verify plugin
-        run: docker build --target artifact --output type=local,dest=dist --progress=plain .
-
-      - name: Verify package and create checksum
-        working-directory: dist
-        run: |
-          test -s plugin_package.zip
-          unzip -t plugin_package.zip
-          sha256sum plugin_package.zip > plugin_package.zip.sha256
-
-      - name: Build isolated Caido restart fixture
-        run: docker build -f tests/caido/Dockerfile -t impersonate-tls-caido-test .
-
-      - name: Verify persisted upstream rules after Caido restarts
-        run: tests/caido/restart.sh dist
-
-      - name: Upload plugin package
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+          version: 11.23.0
+      - uses: actions/setup-node@v4
         with:
-          name: plugin-package
-          path: |
-            dist/plugin_package.zip
-            dist/plugin_package.zip.sha256
-          if-no-files-found: error
-          compression-level: 0
-          retention-days: 14
-
-  release:
-    name: Publish verified release
-    if: startsWith(github.ref, 'refs/tags/v')
-    needs: [build, profiles]
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    permissions:
-      actions: read
-      contents: write
-    env:
-      GH_TOKEN: ${{ github.token }}
-      GH_REPO: ${{ github.repository }}
-      RELEASE_TAG: ${{ github.ref_name }}
-    steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
-        with:
-          persist-credentials: false
-      - name: Validate release version and notes
-        run: |
-          [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
-          test "$RELEASE_TAG" = "v$(jq -r .version package.json)"
-          test -s "docs/releases/$RELEASE_TAG.md"
-      - name: Download the artifact tested by this run
-        run: gh run download "$GITHUB_RUN_ID" --name plugin-package --dir dist
-      - name: Verify downloaded checksum
-        working-directory: dist
-        run: sha256sum --check plugin_package.zip.sha256
-      - name: Upload release as draft
-        run: |
-          # The CLI also finds drafts by pending tag; REST's by-tag endpoint does not.
-          if ! gh release view "$RELEASE_TAG" --json databaseId,isDraft > release-state.json; then
-            gh release create "$RELEASE_TAG" --verify-tag --draft \
-              --title "Impersonate TLS $RELEASE_TAG" \
-              --notes-file "docs/releases/$RELEASE_TAG.md"
-            gh release view "$RELEASE_TAG" --json databaseId,isDraft > release-state.json
-          fi
-          test "$(jq -r .isDraft release-state.json)" = true
-          release_id=$(jq -r .databaseId release-state.json)
-          for asset in plugin_package.zip plugin_package.zip.sha256; do
-            asset_id=$(gh api "repos/$GH_REPO/releases/$release_id/assets" \
-              --jq ".[] | select(.name == \"$asset\") | .id")
-            if [ -z "$asset_id" ]; then
-              gh release upload "$RELEASE_TAG" "dist/$asset"
-            fi
-          done
-      - name: Verify uploaded assets and publish
-        run: |
-          release_id=$(gh release view "$RELEASE_TAG" --json databaseId --jq .databaseId)
-          for asset in plugin_package.zip plugin_package.zip.sha256; do
-            expected_digest="sha256:$(sha256sum "dist/$asset" | cut -d ' ' -f 1)"
-            actual_digest=$(gh api "repos/$GH_REPO/releases/$release_id/assets" \
-              --jq ".[] | select(.name == \"$asset\") | .digest")
-            test "$actual_digest" = "$expected_digest"
-          done
-          gh release edit "$RELEASE_TAG" --draft=false --latest
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test
+      - run: pnpm test:agent
+      - run: pnpm build
+      - run: unzip -t dist/plugin_package.zip

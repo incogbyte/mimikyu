@@ -87,6 +87,8 @@ CDP endpoint through the same `BrowserProvider` abstraction.
   integration and agent smoke tests pass again after rebuilding the agent.
 - Added body-read fallbacks for no-body responses and Network-domain capture;
   both the agent and full Caido integration smoke tests pass after the fix.
+- Added Caido `onInterceptResponse` Activity completion for external agents;
+  the Caido integration smoke now requires `succeeded` Activity state.
 - Removed compressed-response encoding headers when returning CDP-decoded
   bodies, fixing real compressed HTML/font responses in Caido's browser path.
 - Operator manually validated `rentcars.com` through the Caido browser path;
@@ -109,18 +111,15 @@ CDP endpoint through the same `BrowserProvider` abstraction.
    the generated fetch document. The thermoptic bookmark-driven navigation
    behavior must be ported before claiming browser-parity compatibility.
 3. The Docker development token is intentionally a placeholder and must not be
-   used in a released package.
+   used in a released package; production secret handoff remains.
 4. No agent-specific CI job has been added yet; the agent now has a production
    `package-lock.json` and its Docker image builds successfully.
-5. The copied Caido `transport/` Go implementation and TLS profile catalog are
-   legacy files in this new tree. They should either be removed after the agent
-   integration is complete or explicitly retained only for shared relay
-   patterns; Mimikyu must not present TLS profiles as its browser identity.
+5. Production agent packaging and removal of the final legacy profile metadata
+   are still pending.
 6. The Caido POC smoke test exercises package installation, Upstream rule
    routing, the external Docker agent, and a real proxy response.
-7. In external-agent mode, request completion events are not yet bridged back
-   to the Caido backend, so Activity can remain `routed` after a successful
-   proxy response. Spawned-agent mode receives completion events from stdout.
+7. Activity completion is bridged through Caido's `onInterceptResponse` event;
+   failure-only paths without a response still need a dedicated error event.
 
 ## Recommended next steps
 
@@ -165,7 +164,7 @@ CDP endpoint through the same `BrowserProvider` abstraction.
    healthchecks, and target-pool limits done.
 4. Add authenticated upstream proxy routing.
 5. Add integration tests against a local origin and a real Chrome container.
-6. Decide whether to remove the legacy Go transport tree.
+6. ~~Remove the legacy Go transport tree and copied legacy tests/docs.~~ Done.
 
 ## Validation commands
 
