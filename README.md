@@ -11,6 +11,34 @@ traffic through a persistent Chrome/Chromium session. It keeps the browser
 alive, creates a background target for each request, and closes only that
 target when the request finishes.
 
+## Why use this in a pentest
+
+Standard proxy tooling (Caido, Burp) replays raw HTTP requests with a TLS and
+HTTP stack that does not match a real browser. Many modern applications lean
+on that mismatch to detect automation: TLS/JA3 and HTTP/2 fingerprints,
+`Sec-Fetch-*` headers, cookie/session continuity, and JavaScript challenges
+(bot-protection WAFs, Cloudflare-style checks, SPA hydration) can all diverge
+from what a browser would send, producing blocked, throttled, or subtly
+different responses mid-assessment.
+
+Mimikyu closes that gap for the requests you choose to route through it. The
+request is executed by a real, persistent Chrome session over CDP, so the
+TLS fingerprint, JavaScript execution, and browser-native headers are
+genuine, while the traffic still flows through Caido for inspection, replay,
+and tooling. This matters when:
+
+- The target enforces bot/WAF protection that fingerprints TLS or JS
+  execution, where a challenge page never resolves for a bare HTTP client.
+- You need to exercise authenticated flows where session state, cookies, or
+  JavaScript-rendered tokens must survive exactly as a real browser would
+  produce them.
+- You want Caido's Replay/Automate/Workflows tooling against traffic that a
+  pure HTTP proxy would never get past the target's front door.
+
+Route only domains and traffic you are authorized to test; see
+[Configuration and security](#configuration-and-security) and
+[`SECURITY.md`](SECURITY.md).
+
 ## Demo
 
 [![Watch the PoC video](docs/PoC-thumbnail.png)](docs/PoC.mp4)
