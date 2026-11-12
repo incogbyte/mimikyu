@@ -13,7 +13,7 @@ target when the request finishes.
 
 ## Demo
 
-[Watch the PoC video](docs/PoC.mp4)
+[![Watch the PoC video](docs/PoC-thumbnail.png)](docs/PoC.mp4)
 
 ## How it works
 
