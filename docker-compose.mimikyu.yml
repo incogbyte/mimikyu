@@ -19,6 +19,8 @@ services:
       context: ./docker/chrome
     platform: linux/amd64
     mem_limit: 2g
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - mimikyu_chrome_profile:/home/chromeuser/profile
     environment:
