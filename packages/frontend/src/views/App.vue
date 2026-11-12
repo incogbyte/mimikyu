@@ -29,6 +29,7 @@ const modeOptions = [
 const cookieModeOptions = [
   { label: "Shared browser session", value: "shared" },
   { label: "Isolated request session", value: "isolated" },
+  { label: "Isolated clone of session", value: "isolated-cloned" },
 ];
 
 function unwrap<T>(result: Result<T>): T {

@@ -155,9 +155,11 @@ export function createRelay({
                 writeError(response, 501, `Resource route is not implemented: ${route.destination}`);
                 return;
             }
-            const cookieMode = request.headers[COOKIE_MODE_HEADER] === 'isolated'
-                ? 'isolated'
-                : 'shared';
+            const cookieMode = request.headers[COOKIE_MODE_HEADER] === 'isolated-cloned'
+                ? 'isolated-cloned'
+                : request.headers[COOKIE_MODE_HEADER] === 'isolated'
+                    ? 'isolated'
+                    : 'shared';
             const target = await browserManager.acquireTarget({ cookieMode });
             try {
                 await applyRequestCookies(target, url, headers);

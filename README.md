@@ -184,9 +184,11 @@ Open this address without routing it through the Caido proxy. The panel is an
 Xpra control page; the Chrome profile initially opens on `about:blank`, while
 Mimikyu request targets run in the background.
 
-Use **isolated** cookie/session mode when testing account separation, session
-fixation, or token swapping. Each request then uses a fresh browser context and
-does not inherit cookies or local storage from the persistent Xpra profile.
+Use **isolated** cookie/session mode when testing unauthenticated requests or
+when all authentication data is explicitly present in the Replay request. Use
+**isolated-cloned** when you need the current authenticated session as a
+baseline but want every request to run in a disposable context; Replay cookie
+values then override the cloned values without mutating the shared profile.
 
 ## End-to-end validation
 
