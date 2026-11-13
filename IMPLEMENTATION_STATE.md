@@ -101,6 +101,10 @@ CDP endpoint through the same `BrowserProvider` abstraction.
 - Added definitive `shared`/`isolated` cookie session modes. Isolated mode uses
   a fresh Chrome BrowserContext per request and is validated by the agent smoke
   test to prevent persistent-profile cookie leakage.
+- Fixed `packages/backend/src/settings.ts` rejecting `isolated-cloned` as an
+  invalid `cookieMode`: the shared type and frontend Select already offered
+  it, but settings validation still only allowed `shared`/`isolated`, so
+  saving that choice from the UI failed.
 - Removed compressed-response encoding headers when returning CDP-decoded
   bodies, fixing real compressed HTML/font responses in Caido's browser path.
 - Operator manually validated a real-world site with bot protection through
@@ -137,16 +141,10 @@ CDP endpoint through the same `BrowserProvider` abstraction.
    routing, the external Docker agent, and a real proxy response.
 7. Activity completion is bridged through Caido's `onInterceptResponse` event;
    failure-only paths without a response still need a dedicated error event.
-8. Security-testing limitation: Docker-managed Chrome currently uses a shared
-   persistent cookie jar. A Replay request's explicit Cookie values are set,
-   but unrelated profile cookies can still be sent alongside them. This can
-    contaminate session-token/account-isolation tests and requires an isolated
-    browser-context/cookie policy before production use for that scenario.
-9. Isolated mode intentionally starts without authentication state, so sites
-   that require profile cookies or localStorage can return `401`. A future
-   `isolated-cloned` mode should clone the active session into a disposable
-   context, then apply Replay cookies/tokens as overrides without persisting
-   mutations back to the shared profile.
+8. `isolated` and `isolated-cloned` cookie modes are only exercised by
+   `tests/e2e/agent-smoke.mjs` against the local protocol origin. Neither mode
+   has been validated yet against a real authenticated target through the
+   Docker-managed Chrome profile.
 
 ## Recommended next steps
 
@@ -179,7 +177,9 @@ CDP endpoint through the same `BrowserProvider` abstraction.
 3. ~~Adapt the existing route functions to receive an acquired persistent
    target instead of opening and closing a browser connection per request.~~
    Done for current routes.
-4. Add cookie policy: shared persistent session versus isolated request mode.
+4. ~~Add cookie policy: shared persistent session versus isolated request
+   mode.~~ Done: `shared`, `isolated`, and `isolated-cloned` modes are
+   selectable per-plugin-instance in Settings.
 5. ~~Port hooks only after the request lifecycle is isolated and bounded.~~
    Before/after/on-start hooks done.
 

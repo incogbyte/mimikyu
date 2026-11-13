@@ -104,7 +104,9 @@ export class SettingsStore {
       agentPort > 65535 ||
       typeof agentToken !== "string" ||
       agentToken.length > 4096 ||
-      (cookieMode !== "shared" && cookieMode !== "isolated") ||
+      (cookieMode !== "shared" &&
+        cookieMode !== "isolated" &&
+        cookieMode !== "isolated-cloned") ||
       typeof candidate.cdpHost !== "string" ||
       candidate.cdpHost.length === 0 ||
       typeof cdpPort !== "number" ||
