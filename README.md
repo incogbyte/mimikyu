@@ -162,7 +162,7 @@ Then open **Mimikyu** and use these settings:
 | Agent host | `127.0.0.1` |
 | Agent port | `38427` |
 | Agent token | Value of `MIMIKYU_TOKEN` used by the agent |
-| Cookie/session mode | `shared` for normal browser sessions; `isolated` for Replay token testing |
+| Cookie/session mode | `shared` for normal browsing; `isolated` for swapping identity/session per Replay request |
 | Enable browser routing | Enabled |
 | Start with plugin | Enabled |
 
@@ -184,11 +184,12 @@ Open this address without routing it through the Caido proxy. The panel is an
 Xpra control page; the Chrome profile initially opens on `about:blank`, while
 Mimikyu request targets run in the background.
 
-Use **isolated** cookie/session mode when testing unauthenticated requests or
-when all authentication data is explicitly present in the Replay request. Use
-**isolated-cloned** when you need the current authenticated session as a
-baseline but want every request to run in a disposable context; Replay cookie
-values then override the cloned values without mutating the shared profile.
+Use **isolated** cookie/session mode for IDOR, session-fixation, or
+account-separation testing: each request runs in a disposable browser context
+cloned from the current authenticated session, and any cookie present on the
+Replay request overrides the cloned value without mutating the shared
+profile. This keeps the rest of the session intact (CSRF tokens, other
+cookies) while swapping only the identity you're testing.
 
 ## End-to-end validation
 

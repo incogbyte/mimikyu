@@ -73,32 +73,30 @@ export class BrowserManager extends EventEmitter {
         try {
             const browser = await this.connect();
             let browserContextId;
-            if (cookieMode === 'isolated' || cookieMode === 'isolated-cloned') {
+            if (cookieMode === 'isolated') {
                 const context = await browser.Target.createBrowserContext({
                     disposeOnDetach: true,
                 });
                 browserContextId = context.browserContextId;
-                if (cookieMode === 'isolated-cloned') {
-                    const stored = await browser.Storage.getCookies();
-                    await browser.Storage.setCookies({
-                        browserContextId,
-                        cookies: stored.cookies.map((cookie) => ({
-                            name: cookie.name,
-                            value: cookie.value,
-                            domain: cookie.domain,
-                            path: cookie.path,
-                            secure: cookie.secure,
-                            httpOnly: cookie.httpOnly,
-                            expires: cookie.expires,
-                            sameSite: cookie.sameSite,
-                            priority: cookie.priority,
-                            sameParty: cookie.sameParty,
-                            sourceScheme: cookie.sourceScheme,
-                            sourcePort: cookie.sourcePort,
-                            partitionKey: cookie.partitionKey,
-                        })),
-                    });
-                }
+                const stored = await browser.Storage.getCookies();
+                await browser.Storage.setCookies({
+                    browserContextId,
+                    cookies: stored.cookies.map((cookie) => ({
+                        name: cookie.name,
+                        value: cookie.value,
+                        domain: cookie.domain,
+                        path: cookie.path,
+                        secure: cookie.secure,
+                        httpOnly: cookie.httpOnly,
+                        expires: cookie.expires,
+                        sameSite: cookie.sameSite,
+                        priority: cookie.priority,
+                        sameParty: cookie.sameParty,
+                        sourceScheme: cookie.sourceScheme,
+                        sourcePort: cookie.sourcePort,
+                        partitionKey: cookie.partitionKey,
+                    })),
+                });
             }
             let result;
             try {

@@ -28,8 +28,7 @@ const modeOptions = [
 ];
 const cookieModeOptions = [
   { label: "Shared browser session", value: "shared" },
-  { label: "Isolated request session", value: "isolated" },
-  { label: "Isolated clone of session", value: "isolated-cloned" },
+  { label: "Isolated session clone", value: "isolated" },
 ];
 
 function unwrap<T>(result: Result<T>): T {
@@ -268,8 +267,9 @@ onMounted(() => void load());
                     >Cookie/session mode</label
                   >
                   <p class="text-sm text-surface-400">
-                    Isolated mode prevents profile cookies from contaminating
-                    Replay token tests.
+                    Isolated mode runs the request in a disposable browser
+                    context cloned from the active session, so Replay cookies
+                    override it without mutating the shared profile.
                   </p>
                 </div>
                 <Select

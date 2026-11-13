@@ -110,20 +110,23 @@ assert.equal(cookie.status, 200);
 const cookiePayload = JSON.parse(cookie.body.toString('utf8'));
 assert.match(cookiePayload.headers.cookie, /mimikyu_cookie=from-caido/u);
 
-const isolatedCookie = await callAgent({
+const isolatedCloned = await callAgent({
     path: '/api/echo',
     headers: { 'X-Mimikyu-Cookie-Mode': 'isolated' },
 });
-assert.equal(isolatedCookie.status, 200);
-const isolatedPayload = JSON.parse(isolatedCookie.body.toString('utf8'));
-assert.equal(isolatedPayload.headers.cookie, '');
+assert.equal(isolatedCloned.status, 200);
+const isolatedClonedPayload = JSON.parse(isolatedCloned.body.toString('utf8'));
+assert.match(isolatedClonedPayload.headers.cookie, /mimikyu_cookie=from-caido/u);
 
-const clonedCookie = await callAgent({
+const isolatedOverride = await callAgent({
     path: '/api/echo',
-    headers: { 'X-Mimikyu-Cookie-Mode': 'isolated-cloned' },
+    headers: {
+        'X-Mimikyu-Cookie-Mode': 'isolated',
+        Cookie: 'mimikyu_cookie=overridden',
+    },
 });
-assert.equal(clonedCookie.status, 200);
-const clonedPayload = JSON.parse(clonedCookie.body.toString('utf8'));
-assert.match(clonedPayload.headers.cookie, /mimikyu_cookie=from-caido/u);
+assert.equal(isolatedOverride.status, 200);
+const isolatedOverridePayload = JSON.parse(isolatedOverride.body.toString('utf8'));
+assert.match(isolatedOverridePayload.headers.cookie, /mimikyu_cookie=overridden/u);
 
 process.stdout.write('Mimikyu agent E2E smoke passed\n');

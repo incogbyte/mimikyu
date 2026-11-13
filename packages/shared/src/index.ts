@@ -7,7 +7,7 @@ export type TransportState =
   "idle" | "starting" | "running" | "stopping" | "error" | "unsupported";
 
 export type BrowserMode = "docker-managed" | "external-cdp";
-export type CookieMode = "shared" | "isolated" | "isolated-cloned";
+export type CookieMode = "shared" | "isolated";
 export type BrowserState =
   "unknown" | "connected" | "disconnected" | "unavailable";
 

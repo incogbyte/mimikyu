@@ -96,15 +96,18 @@ CDP endpoint through the same `BrowserProvider` abstraction.
   the Caido integration smoke now requires `succeeded` Activity state.
 - Removed the development token from new settings defaults; Docker-managed mode
   now refuses to start without an explicitly configured agent token.
-- Added `isolated-cloned` cookie mode: it clones the current browser cookie jar
-  into a disposable BrowserContext and applies Replay cookies as overrides.
-- Added definitive `shared`/`isolated` cookie session modes. Isolated mode uses
-  a fresh Chrome BrowserContext per request and is validated by the agent smoke
-  test to prevent persistent-profile cookie leakage.
-- Fixed `packages/backend/src/settings.ts` rejecting `isolated-cloned` as an
-  invalid `cookieMode`: the shared type and frontend Select already offered
-  it, but settings validation still only allowed `shared`/`isolated`, so
-  saving that choice from the UI failed.
+- Added, then removed, a zero-state `isolated` cookie mode (fresh
+  BrowserContext with no cookies at all). Operator feedback: the primary
+  pentest workflow (IDOR/account-isolation/parameter-swap testing) needs to
+  swap one identity's cookie while keeping the rest of the session (CSRF
+  tokens, other cookies) intact — a zero-state context just produced
+  unexplained `401`s instead of a useful isolation signal.
+- Settled on two `cookieMode` values: `shared` (persistent profile, normal
+  browsing) and `isolated` (what was briefly called `isolated-cloned`): a
+  disposable BrowserContext cloned from the active session's cookie jar,
+  with any cookie present on the Replay request overriding the cloned value.
+  Validated by the agent smoke test for both the cloned baseline and the
+  override.
 - Removed compressed-response encoding headers when returning CDP-decoded
   bodies, fixing real compressed HTML/font responses in Caido's browser path.
 - Operator manually validated a real-world site with bot protection through
@@ -141,10 +144,15 @@ CDP endpoint through the same `BrowserProvider` abstraction.
    routing, the external Docker agent, and a real proxy response.
 7. Activity completion is bridged through Caido's `onInterceptResponse` event;
    failure-only paths without a response still need a dedicated error event.
-8. `isolated` and `isolated-cloned` cookie modes are only exercised by
-   `tests/e2e/agent-smoke.mjs` against the local protocol origin. Neither mode
-   has been validated yet against a real authenticated target through the
+8. `isolated` cookie mode (clone + override) is only exercised by
+   `tests/e2e/agent-smoke.mjs` against the local protocol origin; it has not
+   been validated against a real authenticated target through the
    Docker-managed Chrome profile.
+9. Cloning only covers cookies (`Storage.getCookies`/`setCookies`). Session
+   or auth state kept in `localStorage`, `sessionStorage`, or IndexedDB is
+   not cloned into the isolated context, so SPA/JWT-in-storage auth will
+   still behave as if logged out under `isolated` mode even though cookies
+   are present.
 
 ## Recommended next steps
 
@@ -178,8 +186,8 @@ CDP endpoint through the same `BrowserProvider` abstraction.
    target instead of opening and closing a browser connection per request.~~
    Done for current routes.
 4. ~~Add cookie policy: shared persistent session versus isolated request
-   mode.~~ Done: `shared`, `isolated`, and `isolated-cloned` modes are
-   selectable per-plugin-instance in Settings.
+   mode.~~ Done: `shared` and `isolated` (session-clone + Replay override)
+   are selectable per-plugin-instance in Settings.
 5. ~~Port hooks only after the request lifecycle is isolated and bounded.~~
    Before/after/on-start hooks done.
 
