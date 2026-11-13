@@ -106,6 +106,15 @@ function requestHeaders(request) {
     return result;
 }
 
+function extractOverrideHeaders(headers) {
+    const result = {};
+    const authorization = headers.authorization;
+    if (authorization !== undefined) {
+        result.Authorization = Array.isArray(authorization) ? authorization[0] : String(authorization);
+    }
+    return result;
+}
+
 export function createRelay({
     token,
     browserManager,
@@ -179,7 +188,11 @@ export function createRelay({
                     if (!responseStarted) return;
                     if (request.method !== 'HEAD') response.write(chunk);
                 };
-                const streamOptions = { onHeaders, onChunk };
+                const streamOptions = {
+                    onHeaders,
+                    onChunk,
+                    overrideHeaders: extractOverrideHeaders(headers),
+                };
                 const result = route.kind === 'navigation'
                     ? await executeNavigation(target, url, streamOptions)
                     : route.kind === 'resource'

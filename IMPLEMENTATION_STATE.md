@@ -108,6 +108,23 @@ CDP endpoint through the same `BrowserProvider` abstraction.
   with any cookie present on the Replay request overriding the cloned value.
   Validated by the agent smoke test for both the cloned baseline and the
   override.
+- Fixed a silent `Authorization` header drop for `navigation` and `form`
+  routes: the Caido SDK (`@caido/sdk-backend` 0.58.2) exposes no
+  original-vs-edited diff on `onUpstream`'s `RequestSpecRaw` (confirmed by
+  reading the `caido:utils` type declarations — no parent/source id on
+  `RequestSpec`), so there is no way to ask Caido "was this field edited."
+  `fetch`-kind requests already carried `Authorization` through the
+  generated `fetch()` options (not in `BROWSER_CONTROLLED_HEADERS`), but
+  `navigation` (direct `Page.navigate`, no header injection at all) and
+  `form` (native `<form>` submit, which cannot carry custom headers) had no
+  mechanism to deliver it. Fixed by threading an `overrideHeaders` option
+  through to the existing CDP `Fetch.requestPaused` interception in
+  `captureResponse()` and merging it into the `Fetch.continueRequest` call
+  at the Request stage, instead of continuing unmodified. Validated by the
+  agent smoke test for both routes. Cookie and body/Content-Type fidelity
+  were checked and already correct; this is scoped to `Authorization` only
+  — other `BROWSER_CONTROLLED_HEADERS` (Origin, Referer, Sec-Fetch-*,
+  User-Agent, Accept-*) are intentionally left as real-browser-native.
 - Removed compressed-response encoding headers when returning CDP-decoded
   bodies, fixing real compressed HTML/font responses in Caido's browser path.
 - Operator manually validated a real-world site with bot protection through

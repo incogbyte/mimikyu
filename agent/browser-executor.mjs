@@ -220,7 +220,7 @@ export async function createWebSocketBridge(target, {
     };
 }
 
-async function captureResponse(target, { captureUrl, navigationUrl, navigationHtml, onHeaders, onChunk }) {
+async function captureResponse(target, { captureUrl, navigationUrl, navigationHtml, overrideHeaders = {}, onHeaders, onChunk }) {
     const { Fetch, IO, Network, Page } = target.tab;
     let settled = false;
     let timer;
@@ -279,7 +279,22 @@ async function captureResponse(target, { captureUrl, navigationUrl, navigationHt
                             });
                             return;
                         }
-                        await Fetch.continueRequest({ requestId: event.requestId });
+                        const overrideEntries = Object.entries(overrideHeaders);
+                        if (overrideEntries.length > 0) {
+                            const mergedHeaders = { ...requestHeaders };
+                            for (const [name, value] of overrideEntries) {
+                                mergedHeaders[name] = value;
+                            }
+                            await Fetch.continueRequest({
+                                requestId: event.requestId,
+                                headers: Object.entries(mergedHeaders).map(([name, value]) => ({
+                                    name,
+                                    value: String(value),
+                                })),
+                            });
+                        } else {
+                            await Fetch.continueRequest({ requestId: event.requestId });
+                        }
                         return;
                     }
 

@@ -62,6 +62,16 @@ const navigation = await callAgent({ path: '/navigation' });
 assert.equal(navigation.status, 200);
 assert.match(navigation.body.toString('utf8'), /mimikyu-navigation-ok/u);
 
+const navigationWithAuth = await callAgent({
+    path: '/navigation',
+    headers: { Authorization: 'Bearer from-caido' },
+});
+assert.equal(navigationWithAuth.status, 200);
+assert.match(
+    navigationWithAuth.body.toString('utf8'),
+    /<span id="authorization">Bearer from-caido<\/span>/u,
+);
+
 const fetchResponse = await callAgent({
     method: 'POST',
     path: '/api/echo',
@@ -101,6 +111,21 @@ const formPayload = JSON.parse(form.body.toString('utf8'));
 assert.equal(formPayload.path, '/form');
 assert.equal(formPayload.method, 'POST');
 assert.equal(formPayload.body, 'user=alice&scope=read');
+
+const formWithAuth = await callAgent({
+    method: 'POST',
+    path: '/form',
+    headers: {
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Content-Type': 'application/x-www-form-urlencoded',
+        Authorization: 'Bearer from-caido',
+    },
+    body: 'user=alice&scope=read',
+});
+assert.equal(formWithAuth.status, 200);
+const formWithAuthPayload = JSON.parse(formWithAuth.body.toString('utf8'));
+assert.equal(formWithAuthPayload.headers.authorization, 'Bearer from-caido');
 
 const cookie = await callAgent({
     path: '/api/echo',

@@ -18,6 +18,7 @@ function requestHeaders(request) {
         origin: request.headers.origin || '',
         referer: request.headers.referer || '',
         userAgent: request.headers['user-agent'] || '',
+        authorization: request.headers.authorization || '',
     };
 }
 
@@ -104,7 +105,8 @@ const server = createServer(async (request, response) => {
     const url = new URL(request.url || '/', `http://${request.headers.host || 'origin'}`);
 
     if (url.pathname === '/navigation') {
-        const html = '<!doctype html><html><body>mimikyu-navigation-ok</body></html>';
+        const authorization = request.headers.authorization || '';
+        const html = `<!doctype html><html><body>mimikyu-navigation-ok<span id="authorization">${authorization}</span></body></html>`;
         response.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
         response.end(html);
         return;
